@@ -1,16 +1,99 @@
 import { View, Text, StyleSheet, TextInput } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import CustomBox from '../components/CustomBox'
 import CustomText from '../components/CustomText'
 import { Button } from '@gluestack-ui/themed'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const Login = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
+  const [loggedIn, setLoggedIn] = useState(false)
 
   const gotoSignup = () => {
     navigation.navigate('SignUp', { name: 'SignUp' });
   };
+
+  const isLoggedIn = async () => {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    console.log('isLoggedIn called');
+    const response = await fetch('http://localhost:9898/auth/v1/ping', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + accessToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    return response.ok;
+  }
+
+  const gotoHomePageWithLogin = async () => {
+    const response = await fetch('http://localhost:9898/auth/v1/login', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({
+        username: userName,
+        password: password,
+      }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      await AsyncStorage.setItem('accessToken', data['accessToken']);
+      await AsyncStorage.setItem('refreshToken', data['token']);
+      navigation.navigate('Home', { name: 'Home' });
+    }
+  };
+
+
+  const refreshToken = async () => {
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    const response = await fetch('http://localhost:9898/auth/v1/refreshToken', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        token: refreshToken
+      })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      await AsyncStorage.setItem('accessToken', data['accessToken']);
+      await AsyncStorage.setItem('refreshToken', data['token']);
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      console.log(
+        'Token after refresh are ' + refreshToken + ' ' + accessToken,
+      )
+    }
+    return response.ok;
+  }
+
+  useEffect(() => {
+    const handleLogin = async () => {
+      const loggedIn = await isLoggedIn();
+      console.log('isLoggedIn: ' + loggedIn);
+      setLoggedIn(loggedIn);
+      if (loggedIn) {
+        navigation.navigate('Home', { name: 'Home' })
+      } else {
+        const refreshed = await refreshToken();
+        setLoggedIn(refreshed);
+        if (refreshed) {
+          navigation.navigate('Home', { name: 'Home' })
+        }
+      }
+    };
+    handleLogin();
+  }, [])
 
   return (
     <View style={styles.loginContainer}>
@@ -34,7 +117,7 @@ const Login = ({ navigation }) => {
           secureTextEntry
         />
       </CustomBox>
-      <Button onPressIn={() => { }} style={styles.button}>
+      <Button onPressIn={() => gotoHomePageWithLogin()} style={styles.button}>
         <CustomBox style={buttonBox}>
           <CustomText style={{ textAlign: 'center' }}>Submit</CustomText>
         </CustomBox>

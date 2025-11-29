@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import CustomBox from '../components/CustomBox'
 import CustomText from '../components/CustomText'
 import { Button } from '@gluestack-ui/themed'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const SignUp = ({ navigation }) => {
     const [firstName, setFirstName] = useState('');
@@ -12,8 +13,43 @@ const SignUp = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
 
+    const navigateToLoginScreen = async () => {
+        try {
+            const response = await fetch('http://localhost:9898/auth/v1/signup', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    'first_name': firstName,
+                    'last_name': lastName,
+                    'email': email,
+                    'phone_number': phoneNumber,
+                    'password': password,
+                    'username': userName
+                }),
+            });
+
+            const data = await response.json();
+            console.log(data);
+            console.log(data["accessToken"]);
+            console.log(data["token"]);
+            await AsyncStorage.setItem('accessToken', data["accessToken"]);
+            await AsyncStorage.setItem('refreshToken', data["token"]);
+            navigation.navigate('Home', { name: 'Home' });
+        } catch (error) {
+            console.error('Error during sign up:', error);
+        }
+    };
+
     const gotLoginWithoutValidation = () => {
-        navigation.navigate('Login', { name: 'Login' });
+        if (navigation.canGoBack()) {
+            navigation.goBack(); // return to previous screen (Login) without stacking another entry
+        } else {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }
     }
 
     return (
@@ -66,7 +102,7 @@ const SignUp = ({ navigation }) => {
                     keyboardType="phone-pad"
                 />
             </CustomBox>
-            <Button onPressIn={() => { }} style={styles.button}>
+            <Button onPressIn={() => navigateToLoginScreen()} style={styles.button}>
                 <CustomBox style={buttonBox}>
                     <CustomText style={{ textAlign: 'center' }}>Sign Up</CustomText>
                 </CustomBox>
