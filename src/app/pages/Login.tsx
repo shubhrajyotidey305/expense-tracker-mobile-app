@@ -1,36 +1,50 @@
-import { View, Text, StyleSheet, TextInput } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import CustomBox from '../components/CustomBox'
-import CustomText from '../components/CustomText'
-import { Button } from '@gluestack-ui/themed'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import CustomText from '../components/CustomText';
+import CustomBox from '../components/CustomBox';
+import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
+import { Button, ButtonText } from '@gluestack-ui/themed';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoginService from '../api/LoginService';
+import { SERVER_BASE_URL } from '@env';
 
 const Login = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
-  const [loggedIn, setLoggedIn] = useState(false)
+  const [loggedIn, setLoggedIn] = useState(true);
+  const loginService = new LoginService();
 
-  const gotoSignup = () => {
-    navigation.navigate('SignUp', { name: 'SignUp' });
-  };
-
-  const isLoggedIn = async () => {
-    const accessToken = await AsyncStorage.getItem('accessToken');
-    console.log('isLoggedIn called');
-    const response = await fetch('http://localhost:9898/auth/v1/ping', {
-      method: 'GET',
+  const refreshToken = async () => {
+    console.log('Inside Refresh token');
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    const response = await fetch(`${SERVER_BASE_URL}/auth/v1/refreshToken`, {
+      method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + accessToken,
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({
+        token: refreshToken,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      await AsyncStorage.setItem('accessToken', data['accessToken']);
+      await AsyncStorage.setItem('refreshToken', data['token']);
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      console.log(
+        'Tokens after refresh are ' + refreshToken + ' ' + accessToken,
+      );
+    }
+
     return response.ok;
-  }
+  };
 
   const gotoHomePageWithLogin = async () => {
-    const response = await fetch('http://localhost:9898/auth/v1/login', {
+    const response = await fetch(`${SERVER_BASE_URL}/auth/v1/login`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -44,94 +58,71 @@ const Login = ({ navigation }) => {
     });
     if (response.ok) {
       const data = await response.json();
-      await AsyncStorage.setItem('accessToken', data['accessToken']);
       await AsyncStorage.setItem('refreshToken', data['token']);
+      await AsyncStorage.setItem('accessToken', data['accessToken']);
       navigation.navigate('Home', { name: 'Home' });
     }
   };
 
-
-  const refreshToken = async () => {
-    const refreshToken = await AsyncStorage.getItem('refreshToken');
-    const response = await fetch('http://localhost:9898/auth/v1/refreshToken', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({
-        token: refreshToken
-      })
-    });
-    if (response.ok) {
-      const data = await response.json();
-      await AsyncStorage.setItem('accessToken', data['accessToken']);
-      await AsyncStorage.setItem('refreshToken', data['token']);
-      const refreshToken = await AsyncStorage.getItem('refreshToken');
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      console.log(
-        'Token after refresh are ' + refreshToken + ' ' + accessToken,
-      )
-    }
-    return response.ok;
-  }
+  const gotoSignup = () => {
+    navigation.navigate('SignUp', { name: 'SignUp' });
+  };
 
   useEffect(() => {
     const handleLogin = async () => {
-      const loggedIn = await isLoggedIn();
-      console.log('isLoggedIn: ' + loggedIn);
+      const loggedIn = await loginService.isLoggedIn();
       setLoggedIn(loggedIn);
       if (loggedIn) {
-        navigation.navigate('Home', { name: 'Home' })
+        navigation.navigate('Home', { name: 'Home' });
       } else {
         const refreshed = await refreshToken();
         setLoggedIn(refreshed);
         if (refreshed) {
-          navigation.navigate('Home', { name: 'Home' })
+          setLoggedIn(refreshed);
+          navigation.navigate('Home', { name: 'Home' });
         }
       }
     };
     handleLogin();
-  }, [])
+  }, []);
 
   return (
-    <View style={styles.loginContainer}>
-      <CustomBox style={loginBox}>
-        <CustomText style={styles.heading}>
-          Login
-        </CustomText>
-        <TextInput
-          placeholder="User Name"
-          value={userName}
-          onChangeText={text => setUserName(text)}
-          style={styles.textInput}
-          placeholderTextColor="#888"
-        />
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={text => setPassword(text)}
-          style={styles.textInput}
-          placeholderTextColor="#888"
-          secureTextEntry
-        />
-      </CustomBox>
-      <Button onPressIn={() => gotoHomePageWithLogin()} style={styles.button}>
-        <CustomBox style={buttonBox}>
-          <CustomText style={{ textAlign: 'center' }}>Submit</CustomText>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.loginContainer}>
+        <CustomBox style={loginBox}>
+          <CustomText style={styles.heading}>Login</CustomText>
+          <TextInput
+            placeholder="User Name"
+            value={userName}
+            onChangeText={text => setUserName(text)}
+            style={styles.textInput}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={text => setPassword(text)}
+            style={styles.textInput}
+            placeholderTextColor="#888"
+            secureTextEntry
+          />
         </CustomBox>
-      </Button>
-      <Button onPressIn={() => gotoSignup()} style={styles.button}>
-        <CustomBox style={buttonBox}>
-          <CustomText style={{ textAlign: 'center' }}>Goto Signup</CustomText>
-        </CustomBox>
-      </Button>
-    </View>
-  )
-}
+        <Button onPressIn={() => gotoHomePageWithLogin()} style={styles.button}>
+          <CustomBox style={buttonBox}>
+            <CustomText style={{ textAlign: 'center' }}>Submit</CustomText>
+          </CustomBox>
+        </Button>
+        <Button onPressIn={() => gotoSignup()} style={styles.button}>
+          <CustomBox style={buttonBox}>
+            <CustomText style={{ textAlign: 'center' }}>Goto Signup</CustomText>
+          </CustomBox>
+        </Button>
+      </View>
+    </GestureHandlerRootView>
+  );
+};
 
-export default Login
+export default Login;
 
 const styles = StyleSheet.create({
   loginContainer: {

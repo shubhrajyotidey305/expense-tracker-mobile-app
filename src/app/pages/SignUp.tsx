@@ -1,9 +1,11 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native'
-import React, { useState } from 'react'
-import CustomBox from '../components/CustomBox'
-import CustomText from '../components/CustomText'
-import { Button } from '@gluestack-ui/themed'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import CustomText from '../components/CustomText';
+import CustomBox from '../components/CustomBox';
+import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
+import { Button, ButtonText } from '@gluestack-ui/themed';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SERVER_BASE_URL } from '@env';
 
 const SignUp = ({ navigation }) => {
     const [firstName, setFirstName] = useState('');
@@ -15,7 +17,7 @@ const SignUp = ({ navigation }) => {
 
     const navigateToLoginScreen = async () => {
         try {
-            const response = await fetch('http://localhost:9898/auth/v1/signup', {
+            const response = await fetch(`${SERVER_BASE_URL}/auth/v1/signup`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -53,70 +55,72 @@ const SignUp = ({ navigation }) => {
     }
 
     return (
-        <View style={styles.signupContainer}>
-            <CustomBox style={signUpBox}>
-                <CustomText style={styles.heading}>Sign Up</CustomText>
-                <TextInput
-                    placeholder="First Name"
-                    value={firstName}
-                    onChangeText={text => setFirstName(text)}
-                    style={styles.textInput}
-                    placeholderTextColor="#888"
-                />
-                <TextInput
-                    placeholder="Last Name"
-                    value={lastName}
-                    onChangeText={text => setLastName(text)}
-                    style={styles.textInput}
-                    placeholderTextColor="#888"
-                />
-                <TextInput
-                    placeholder="User Name"
-                    value={userName}
-                    onChangeText={text => setUserName(text)}
-                    style={styles.textInput}
-                    placeholderTextColor="#888"
-                />
-                <TextInput
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={text => setEmail(text)}
-                    style={styles.textInput}
-                    placeholderTextColor="#888"
-                    keyboardType="email-address"
-                />
-                <TextInput
-                    placeholder="Password"
-                    value={password}
-                    onChangeText={text => setPassword(text)}
-                    style={styles.textInput}
-                    placeholderTextColor="#888"
-                    secureTextEntry
-                />
-                <TextInput
-                    placeholder="Phone Number"
-                    value={phoneNumber}
-                    onChangeText={text => setPhoneNumber(text)}
-                    style={styles.textInput}
-                    placeholderTextColor="#888"
-                    keyboardType="phone-pad"
-                />
-            </CustomBox>
-            <Button onPressIn={() => navigateToLoginScreen()} style={styles.button}>
-                <CustomBox style={buttonBox}>
-                    <CustomText style={{ textAlign: 'center' }}>Sign Up</CustomText>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <View style={styles.signupContainer}>
+                <CustomBox style={signUpBox}>
+                    <CustomText style={styles.heading}>Sign Up</CustomText>
+                    <TextInput
+                        placeholder="First Name"
+                        value={firstName}
+                        onChangeText={text => setFirstName(text)}
+                        style={styles.textInput}
+                        placeholderTextColor="#888"
+                    />
+                    <TextInput
+                        placeholder="Last Name"
+                        value={lastName}
+                        onChangeText={text => setLastName(text)}
+                        style={styles.textInput}
+                        placeholderTextColor="#888"
+                    />
+                    <TextInput
+                        placeholder="User Name"
+                        value={userName}
+                        onChangeText={text => setUserName(text)}
+                        style={styles.textInput}
+                        placeholderTextColor="#888"
+                    />
+                    <TextInput
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={text => setEmail(text)}
+                        style={styles.textInput}
+                        placeholderTextColor="#888"
+                        keyboardType="email-address"
+                    />
+                    <TextInput
+                        placeholder="Password"
+                        value={password}
+                        onChangeText={text => setPassword(text)}
+                        style={styles.textInput}
+                        placeholderTextColor="#888"
+                        secureTextEntry
+                    />
+                    <TextInput
+                        placeholder="Phone Number"
+                        value={phoneNumber}
+                        onChangeText={text => setPhoneNumber(text)}
+                        style={styles.textInput}
+                        placeholderTextColor="#888"
+                        keyboardType="phone-pad"
+                    />
                 </CustomBox>
-            </Button>
-            <Button onPressIn={() => gotLoginWithoutValidation()} style={styles.button}>
-                <CustomBox style={buttonBox}>
-                    <CustomText style={{ textAlign: 'center' }}>Login</CustomText>
-                </CustomBox>
-            </Button>
-        </View>
-    )
-}
+                <Button onPressIn={() => navigateToLoginScreen()} style={styles.button}>
+                    <CustomBox style={buttonBox}>
+                        <CustomText style={{ textAlign: 'center' }}>Sign Up</CustomText>
+                    </CustomBox>
+                </Button>
+                <Button onPressIn={() => gotLoginWithoutValidation()} style={styles.button}>
+                    <CustomBox style={buttonBox}>
+                        <CustomText style={{ textAlign: 'center' }}>Login</CustomText>
+                    </CustomBox>
+                </Button>
+            </View>
+        </GestureHandlerRootView>
+    );
+};
 
-export default SignUp
+export default SignUp;
 
 const styles = StyleSheet.create({
     signupContainer: {
